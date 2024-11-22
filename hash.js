@@ -166,18 +166,40 @@ let LinkedList = function () {
   this.find = function (key) {
     let index = 0;
     let tempNode = this.root;
-    if (tempNode.key == key) {
-      return index;
-    } else {
-      while (tempNode.nextNode != null) {
-        tempNode = tempNode.nextNode;
-        index++;
-        if (tempNode.key == key) {
-          return index;
+    if (tempNode != null) {
+      if (tempNode.key == key) {
+        return index;
+      } else {
+        while (tempNode.nextNode != null) {
+          tempNode = tempNode.nextNode;
+          index++;
+          if (tempNode.key == key) {
+            return index;
+          }
         }
       }
     }
     return null;
+  };
+
+  this.toArray = function () {
+    let data = [];
+    let tempNode = this.root;
+
+    if (tempNode != null) {
+      const key = tempNode.key;
+      const value = tempNode.value;
+      data.push({ key, value });
+    }
+    while (tempNode.nextNode != null) {
+      tempNode = tempNode.nextNode;
+      const key = tempNode.key;
+      const value = tempNode.value;
+      data.push({ key, value });
+    }
+    if (data.length > 0) {
+      return data;
+    }
   };
 
   this.toString = function () {
@@ -198,6 +220,57 @@ let HashMap = function () {
   this.capacity = 16;
   this.buckets = [];
 
+  this.clear = function () {
+    let i = 0;
+    while (i < this.capacity) {
+      this.buckets[i] = null;
+      i++;
+    }
+  };
+
+
+  this.entries = function () {
+    let i = 0;
+    let entries = [];
+    while (i < this.capacity) {
+      if (this.buckets[i] != null) {
+        let data = this.buckets[i].toArray();
+        data.forEach((datum) => {
+          const key = datum.key;
+          const value = datum.value;
+          entries.push({key,value})
+        });
+      }
+      i++;
+    }
+    return entries;
+  };
+
+  this.keys = function () {
+    let i = 0;
+    let keys = [];
+    while (i < this.capacity) {
+      if (this.buckets[i] != null) {
+        let data = this.buckets[i].toArray();
+        data.forEach((datum) => {
+          keys.push(datum.key);
+        });
+      }
+      i++;
+    }
+    return keys;
+  };
+
+  this.length = function () {
+    return this.keys().length;
+  };
+
+  this.checkLoad = function(){
+    return ( this.length() > (this.loadFactor * this.capacity) )
+  }
+
+
+
   this.hash = function (key) {
     let hashCode = 0;
 
@@ -211,6 +284,31 @@ let HashMap = function () {
 
   this.calcBucket = function (hash) {
     return hash % this.capacity;
+  };
+
+  this.doubleCapacity = function(){
+    let entries = this.entries();
+    this.capacity *= 2;
+    this.clear()
+    entries.forEach((entry)=>{
+      const hashNo = this.hash(entry.key);
+      let existingKeyIndex = null;
+      const bucketIndex = this.calcBucket(hashNo);
+      if (
+        this.buckets[bucketIndex] == undefined ||
+        this.buckets[bucketIndex] == null
+      ) {
+        this.buckets[bucketIndex] = new LinkedList();
+      } else {
+        existingKeyIndex = this.buckets[bucketIndex].find(entry.key);
+      }
+      if (existingKeyIndex != null) {
+        this.buckets[bucketIndex].replaceAt(entry.key, entry.value, existingKeyIndex);
+      } else {
+        this.buckets[bucketIndex].append(entry.key, entry.value);
+      }
+    })
+     
   };
 
   this.set = function (key, value) {
@@ -230,6 +328,9 @@ let HashMap = function () {
     } else {
       this.buckets[bucketIndex].append(key, value);
     }
+    if (this.checkLoad()){
+      this.doubleCapacity()
+    }
   };
 
   this.get = function (key) {
@@ -243,16 +344,78 @@ let HashMap = function () {
       return null;
     } else {
       existingKeyIndex = this.buckets[bucketIndex].find(key);
-      if (existingKeyIndex != null){
+      if (existingKeyIndex != null) {
         return this.buckets[bucketIndex].at(existingKeyIndex).value;
-      }else{
+      } else {
         return null;
       }
     }
   };
+
+  this.has = function (key) {
+    const hashNo = this.hash(key);
+    const bucketIndex = this.calcBucket(hashNo);
+    if (
+      this.buckets[bucketIndex] == undefined ||
+      this.buckets[bucketIndex] == null
+    ) {
+      return false;
+    } else {
+      return this.buckets[bucketIndex].contains(key);
+    }
+  };
+
+  this.remove = function (key) {
+    const hashNo = this.hash(key);
+    const bucketIndex = this.calcBucket(hashNo);
+    let existingKeyIndex = null;
+    if (
+      this.buckets[bucketIndex] == undefined ||
+      this.buckets[bucketIndex] == null
+    ) {
+      return false;
+    } else {
+      existingKeyIndex = this.buckets[bucketIndex].find(key);
+      if (existingKeyIndex != null) {
+        this.buckets[bucketIndex].removeAt(existingKeyIndex);
+        return true;
+      } else {
+        return false;
+      }
+    }
+  };
+
+  this.values = function () {
+    let i = 0;
+    let values = [];
+    while (i < this.capacity) {
+      if (this.buckets[i] != null) {
+        let data = this.buckets[i].toArray();
+        data.forEach((datum) => {
+          values.push(datum.value);
+        });
+      }
+      i++;
+    }
+    return values;
+  };
+
+
+  this.clear();
 };
 
 hm = new HashMap();
-hm.set('apple', 'red');
-hm.set('apple', 'yellow');
-console.log();
+hm.set('apple', 'red')
+hm.set('banana', 'yellow')
+hm.set('carrot', 'orange')
+hm.set('dog', 'brown')
+hm.set('elephant', 'gray')
+hm.set('frog', 'green')
+hm.set('grape', 'purple')
+hm.set('hat', 'black')
+hm.set('ice cream', 'white')
+hm.set('jacket', 'blue')
+hm.set('kite', 'pink')
+hm.set('lion', 'golden')
+hm.set('moon', 'silver');
+console.log(hm.length());
